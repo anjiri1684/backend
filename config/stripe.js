@@ -1,10 +1,8 @@
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Use your secret key from the .env file
-
-// Create a Stripe payment intent
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const createPaymentIntent = async (amount) => {
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // Convert to cents
+      amount: amount * 100,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
     });

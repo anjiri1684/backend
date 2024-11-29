@@ -5,6 +5,9 @@ const Beat = require("../models/Beat");
 const { verifyUserToken } = require("../middleware/authMiddleware");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+// Log the Stripe secret key for debugging purposes
+console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
+
 // Purchase a beat
 router.post("/purchase", verifyUserToken, async (req, res) => {
   try {
@@ -34,12 +37,9 @@ router.post("/purchase", verifyUserToken, async (req, res) => {
     });
     await payment.save();
 
-    res.status(200).json({
-      clientSecret: paymentIntent.client_secret,
-      message: "Payment initiated successfully.",
-    });
+    res.status(200).json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
-    console.error("Error during purchase:", error.message);
+    console.error(error); // Log error for debugging
     res.status(500).json({ message: error.message });
   }
 });
@@ -48,49 +48,14 @@ router.post("/purchase", verifyUserToken, async (req, res) => {
 router.get("/history", verifyUserToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const payments = await Payment.find({ userId }).populate(
-      "beatId",
-      "title price"
-    );
+    const payments = await Payment.find({ userId })
+      .populate("beatId", "title price") // Populate beat details (title and price)
+      .exec(); // Ensures the query is executed properly
     res.status(200).json({ payments });
   } catch (error) {
-    console.error("Error fetching payment history:", error.message);
+    console.error(error); // Log error for debugging
     res.status(500).json({ message: error.message });
   }
 });
-
-// Stripe webhook for payment confirmation
-router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
-    const sig = req.headers["stripe-signature"];
-
-    try {
-      const event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        endpointSecret
-      );
-
-      // Handle successful payment
-      if (event.type === "payment_intent.succeeded") {
-        const paymentIntent = event.data.object;
-        const payment = await Payment.findOneAndUpdate(
-          { stripePaymentIntentId: paymentIntent.id },
-          { paymentStatus: "completed" },
-          { new: true }
-        );
-        console.log("Payment succeeded:", payment);
-      }
-
-      res.status(200).send("Webhook received.");
-    } catch (error) {
-      console.error("Webhook error:", error.message);
-      res.status(400).send(`Webhook error: ${error.message}`);
-    }
-  }
-);
 
 module.exports = router;
