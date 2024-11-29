@@ -44,6 +44,22 @@ router.post("/purchase", verifyUserToken, async (req, res) => {
   }
 });
 
+router.get("/revenue", async (req, res) => {
+  try {
+    const totalRevenue = await Payment.aggregate([
+      { $match: { paymentStatus: "completed" } }, // Only completed payments
+      { $group: { _id: null, totalRevenue: { $sum: "$amount" } } },
+    ]);
+
+    // If no payments exist or no completed payments
+    const revenue = totalRevenue[0] ? totalRevenue[0].totalRevenue : 0;
+    res.status(200).json({ revenue });
+  } catch (error) {
+    console.error("Error fetching revenue:", error);
+    res.status(500).json({ message: "Error fetching revenue." });
+  }
+});
+
 // View payment history
 router.get("/history", verifyUserToken, async (req, res) => {
   try {

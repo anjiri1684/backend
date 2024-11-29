@@ -11,7 +11,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const favoriteRoutes = require("./routes/favoritesRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
+const userRoutes = require("./routes/userRoutes");
 const app = express();
 
 const corsOptions = {
@@ -22,18 +22,25 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
-const apiRoutes = [
-  { path: "/api/auth", route: authRoutes },
-  { path: "/api/beats", route: beatRoutes },
-  { path: "/api/payments", route: paymentRoutes },
-  { path: "/api/subscription", route: subscriptionRoutes },
-  { path: "/api/favorites", route: favoriteRoutes },
-  { path: "/api/admin", route: adminRoutes },
-];
+// Logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
-apiRoutes.forEach((route) => app.use(route.path, route.route));
+// API Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/beats", beatRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/favorites", favoriteRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api", adminRoutes);
 
+// Database connection
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,

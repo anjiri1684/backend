@@ -13,5 +13,3 @@ exports.addFavorite = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-// More functions for removing and viewing favorites...
