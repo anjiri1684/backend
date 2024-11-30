@@ -6,20 +6,27 @@ exports.uploadBeat = async (req, res) => {
   try {
     const { title, artist, genre, price } = req.body;
 
-    // Ensure audio and image files are uploaded
-    if (!req.files || !req.files.audioFile || !req.files.image) {
-      return res
-        .status(400)
-        .json({ message: "Audio and image files are required!" });
+    // Ensure audio file is uploaded
+    if (!req.files || !req.files.audioFile) {
+      return res.status(400).json({ message: "Audio file is required!" });
     }
+
+    const audioFilePath = `${req.protocol}://${req.get("host")}/uploads/audio/${
+      req.files.audioFile[0].filename
+    }`;
+    const imageFilePath = req.files.image
+      ? `${req.protocol}://${req.get("host")}/uploads/images/${
+          req.files.image[0].filename
+        }`
+      : null;
 
     const beat = new Beat({
       title,
       artist,
       genre,
       price,
-      audioFile: req.files.audioFile[0].path,
-      image: req.files.image[0].path,
+      audioFile: audioFilePath,
+      image: imageFilePath,
     });
 
     await beat.save();

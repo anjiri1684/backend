@@ -11,8 +11,10 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const favoriteRoutes = require("./routes/favoritesRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+
 const userRoutes = require("./routes/userRoutes");
 const app = express();
+const path = require("path");
 
 const corsOptions = {
   origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both ports
@@ -22,7 +24,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Logging middleware for debugging
 app.use((req, res, next) => {
@@ -47,6 +49,6 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => console.log("Database connected"))
-  .catch((err) => console.log("Database connection error:", err));
+  .catch((err) => console.error("Database connection error:", err));
 
 module.exports = app;
