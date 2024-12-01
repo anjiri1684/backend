@@ -1,10 +1,13 @@
+// beatRoutes.js
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const Beat = require("../models/Beat");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Use your Stripe secret key
+const { createPaymentIntent } = require("./paymentRoutes"); // Import createPaymentIntent
 
-// Configure Multer
+// Configure Multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folder = file.mimetype.startsWith("audio")
@@ -76,37 +79,40 @@ router.get("/", async (req, res) => {
 });
 
 // Checkout route
-router.post("/checkout", async (req, res) => {
+
+// Route for creating a payment intent
+router.post("/create-payment-intent", async (req, res) => {
+  const { beatIds } = req.body;
+
+  if (!beatIds || !Array.isArray(beatIds)) {
+    return res.status(400).json({ error: "Invalid beat IDs provided." });
+  }
+
+  // Fetch beats from the database based on beatIds
+  const beats = await Beat.find({ _id: { $in: beatIds } });
+
+  if (!beats || beats.length === 0) {
+    return res
+      .status(404)
+      .json({ error: "No beats found for the provided IDs." });
+  }
+
+  // Calculate total price dynamically
+  const totalPrice = beats.reduce((sum, beat) => sum + beat.price, 0);
+
   try {
-    const { beatIds } = req.body;
+    // Create payment intent
+    const paymentIntent = await createPaymentIntent(totalPrice);
 
-    if (!beatIds || !Array.isArray(beatIds)) {
-      return res.status(400).json({ error: "Invalid beat IDs provided." });
-    }
-
-    // Fetch beats from database
-    const beats = await Beat.find({ _id: { $in: beatIds } });
-
-    if (!beats || beats.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "No beats found for the provided IDs." });
-    }
-
-    // Calculate total price
-    const totalPrice = beats.reduce((sum, beat) => sum + beat.price, 0);
-
-    // Return the details
+    // Return client secret and beats data to frontend
     res.status(200).json({
-      message: "Checkout successful!",
+      clientSecret: paymentIntent.client_secret,
       beats,
       totalPrice,
     });
   } catch (error) {
-    console.error("Error during checkout:", error);
-    res
-      .status(500)
-      .json({ error: "Checkout process failed. Please try again." });
+    console.error("Error during payment intent creation:", error);
+    res.status(500).json({ error: "Payment creation failed." });
   }
 });
 

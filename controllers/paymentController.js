@@ -1,16 +1,18 @@
 const stripe = require("../config/stripe");
 const Payment = require("../models/Payment");
 
-exports.createPaymentIntent = async (req, res) => {
+const createPaymentIntent = async (amount, metadata = {}) => {
   try {
-    const { amount, currency } = req.body;
-
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency,
+      amount: amount * 100, // Convert to the smallest currency unit (cents)
+      currency: "usd", // Adjust as per your currency needs
+      automatic_payment_methods: { enabled: true },
+      metadata, // Optional metadata like beat IDs, user info, etc.
     });
-    res.status(200).json({ clientSecret: paymentIntent.client_secret });
+
+    return paymentIntent;
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error creating payment intent:", error);
+    throw new Error(`Payment creation failed: ${error.message || error}`);
   }
 };

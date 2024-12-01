@@ -1,6 +1,4 @@
-const dotenv = require("dotenv"); // Ensure dotenv is required at the top
-dotenv.config();
-
+require("dotenv").config(); // Ensure dotenv is required first
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const express = require("express");
 const mongoose = require("mongoose");
@@ -11,7 +9,6 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const favoriteRoutes = require("./routes/favoritesRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
 const userRoutes = require("./routes/userRoutes");
 const app = express();
 const path = require("path");
@@ -40,7 +37,7 @@ app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api", adminRoutes);
+app.use("/api/checkout", paymentRoutes);
 
 // Database connection
 mongoose
@@ -48,7 +45,27 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("Database connected"))
-  .catch((err) => console.error("Database connection error:", err));
+  .then(() => {
+    console.log("Database connected");
+  })
+  .catch((err) => {
+    console.error("Database connection error:", err);
+  });
+
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Global error handler:", err.stack);
+  res.status(500).json({ message: "Internal server error" });
+});
+
+app.get("/test", (req, res) => {
+  console.log("Test route hit");
+  res.send("Test successful");
+});
+
+app.use((req, res, next) => {
+  console.log(`[Middleware] ${req.method} ${req.url}`); // Logs each request
+  next();
+});
 
 module.exports = app;
